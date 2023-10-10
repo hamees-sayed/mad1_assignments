@@ -2,6 +2,7 @@ import sys
 import csv
 import matplotlib.pyplot as plt
 from jinja2 import Template
+from pyhtml import *
 
 
 # storing csv data in local data structure
@@ -32,7 +33,7 @@ def avg_marks(data, id):
     count = 0
     for elem in data:
         if elem['course_id'] == id:
-            total_marks += elem['marks']
+            total_marks += int(elem['marks'])
             count += 1
     return total_marks / count if count > 0 else 0
 
@@ -40,7 +41,7 @@ def max_marks(data, id):
     max_marks = 0
     for elem in data:
         if elem['course_id'] == id:
-            marks = elem['marks']
+            marks = int(elem['marks'])
             if marks > max_marks:
                 max_marks = marks
     return max_marks
@@ -74,34 +75,35 @@ STUDENT = """<!DOCTYPE html>
 """
 
 
-COURSE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <h1>Course Details</h1>
-    <table border=1>
-        <tr>
-            <th>Average Marks</th>
-            <th>Maximum Marks</th>
-        </tr>
-        <tr>
-            <td>{{ avg_marks(data, id) }}</td>
-            <td>{{ max_marks(data, id) }}</td>
-        </tr>
-    </table>
-</body>
-</html>
-"""
+COURSE = html(
+    head(
+        meta(charset="UTF-8"),
+        meta(name="viewport", content="width=device-width, initial-scale=1.0"),
+        title("Course Details")
+    ),
+    body(
+        h1("Course Details"),
+        table(border=1)(
+            tr(
+                th("Average Marks"),
+                th("Maximum Marks")
+            ),
+            tr(
+                td(avg_marks(data, id)),
+                td(max_marks(data, id))
+            )
+        )
+    )
+)
 
 
 def main(data, id, page):
-    template = Template(page)
     f = open("output.html", "w")
-    f.write(template.render(data=data, id=id))
+    if page == STUDENT:
+        template = Template(page)
+        f.write(template.render(data=data, id=id))
+    else:
+        f.write(COURSE.render(data=data, id=id))
     f.close()
 
 
