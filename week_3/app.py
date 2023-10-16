@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -36,6 +37,9 @@ def course_page(c_id):
         if c_id == c[1]:
             c_marks.append(c[2])
 
+    path = "./static"
+    if not os.path.exists(path):
+        os.mkdir(path)
     plt.hist(c_marks)
     plt.xlabel('Marks')
     plt.ylabel('Frequency')
