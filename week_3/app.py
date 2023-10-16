@@ -48,10 +48,18 @@ def main():
     if request.method == "GET":
         return render_template('form.html')
     elif request.method == "POST":
-        if request.form["ID"] == "student_id":
-            return student_page(int(request.form["id_value"]))
-        elif request.form["ID"] == "course_id":
-            return course_page(int(request.form["id_value"]))
+        id_value = request.form["id_value"]
+        id_category = request.form["ID"]
+        if not id_value:
+            return error_page()
+        try:
+            id_value = int(id_value)
+        except ValueError:
+            return error_page()
+        if id_category == "student_id":
+            return student_page(id_value)
+        elif id_category == "course_id":
+            return course_page(id_value)
         else:
             return error_page()
     else:
