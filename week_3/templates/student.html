@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <h1>Student Details</h1>
+    <table border="1">
+      <tr>
+        <th>Student ID</th>
+        <th>Course ID</th>
+        <th>Marks</th>
+      </tr>
+      {% for i in s_data %}
+      <tr>
+        <td>{{ i[0] }}</td>
+        <td>{{ i[1] }}</td>
+        <td>{{ i[2] }}</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="2">Total Marks</td>
+        <td>{{ tot_marks }}</td>
+      </tr>
+    </table>
+  </body>
+</html>
