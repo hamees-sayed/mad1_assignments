@@ -11,15 +11,12 @@ with open('data.csv', 'r', encoding="utf-8") as data_file:
     for i in data_file.readlines():
         data.append(list(map(int, i.strip('\n').split(','))))
 
-
 def error_page():
     return render_template("error.html")
 
-
 def student_page(s_id):
     if s_id not in [i[0] for i in data]:
-        error_page()
-        return
+        return error_page()
 
     s_data = []
     tot_marks = 0
@@ -32,8 +29,7 @@ def student_page(s_id):
 
 def course_page(c_id):
     if c_id not in[i[1] for i in data]:
-        error_page()
-        return
+        return error_page()
 
     c_marks = []
     for c in data:
@@ -53,15 +49,13 @@ def main():
         return render_template('form.html')
     elif request.method == "POST":
         if request.form["ID"] == "student_id":
-            student_page(int(request.form["id_value"]))
+            return student_page(int(request.form["id_value"]))
         elif request.form["ID"] == "course_id":
-            course_page(int(request.form["id_value"]))
+            return course_page(int(request.form["id_value"]))
         else:
-            error_page()
+            return error_page()
     else:
-        error_page()
-
+        return error_page()
 
 if __name__ == '__main__':
-    app.debug=True
     app.run()
