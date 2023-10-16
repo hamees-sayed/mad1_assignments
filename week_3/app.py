@@ -46,7 +46,7 @@ def course_page(c_id):
 @app.route('/', methods=["GET", "POST"])
 def main():
     if request.method == "GET":
-        return render_template('form.html')
+        return render_template('index.html')
     elif request.method == "POST":
         id_value = request.form["id_value"]
         id_category = request.form["ID"]
