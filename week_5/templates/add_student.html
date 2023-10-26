@@ -25,14 +25,10 @@
       <br>
       <div>
         <label>Select Courses: </label>
-        <input type="checkbox" name="courses" value="course_1" />
-        <label>MAD I</label>
-        <input type="checkbox" name="courses" value="course_2" />
-        <label>DBMS</label>
-        <input type="checkbox" name="courses" value="course_3" />
-        <label>PDSA</label>
-        <input type="checkbox" name="courses" value="course_4" />
-        <label>BDM</label>
+        {% for course in courses %}
+          <input type="checkbox" name="courses" value={{course.course_id}} />
+          <label>{{course.course_name}}</label>
+        {% endfor %}
       </div>
       <br>
       <div>

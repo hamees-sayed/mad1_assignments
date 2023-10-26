@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Student List</title>
+    <title>Home</title>
    </style>
   </head>
   <body>
@@ -22,7 +22,7 @@
       {% for student in students %}
       <tr>
         <td>{{student.student_id}}</td>
-        <td><a href="/student/{{student.student_id}}">{{student.roll_no}}</a></td>
+        <td><a href="/student/{{student.student_id}}">{{student.roll_number}}</a></td>
         <td>{{student.first_name}}</td>
         <td>{{student.last_name}}</td>
         <td>
@@ -34,6 +34,6 @@
     </table>
     {% endif %}
     <br>
-    <a href="/student/create" type="button">+ Add Student</a>
+    <a href="/student/create" type="button"><button>+ Add Student</button></a>
   </body>
 </html>
