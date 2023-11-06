@@ -50,13 +50,13 @@ class ResourceValidationError(HTTPException):
 class Students(Resource):
     def get(self, student_id):
         student = Student.query.filter(Student.student_id == student_id).first()
-        if student:
-            return {"student_id": student.student_id, 
-                    "roll_number": student.roll_number, 
-                    "first_name": student.first_name, 
-                    "last_name": student.last_name}
-        else:
+        if student is None:
             abort(404, "Student not found")
+            
+        return {"student_id": student.student_id, 
+                "first_name": student.first_name, 
+                "last_name": student.last_name,
+                "roll_number": student.roll_number}
     
     def post(self):
         args = request.json
@@ -65,32 +65,32 @@ class Students(Resource):
         last_name = args.get("last_name")
 
         student = Student.query.filter(Student.roll_number == roll_number).first()
-        if student:
-            abort(409, "Student already exist")
-        elif roll_number is None or len(roll_number)==0:
+        
+        if roll_number is None or len(roll_number)==0:
             raise ResourceValidationError(400, "STUDENT001", "Roll Number required")
         elif first_name is None  or len(first_name)==0:
             raise ResourceValidationError(400, "STUDENT002", "First Name is required")
-        else:
-            new_student = Student(roll_number=roll_number, first_name=first_name, last_name=last_name)
-            db.session.add(new_student)
-            db.session.commit()
-            return ({
-                "student_id": new_student.student_id,
-                "first_name": new_student.first_name,
-                "last_name": new_student.last_name,
-                "roll_number": new_student.roll_number
-            }), 201
+        elif student:
+            abort(409, "Student already exist")
+
+        new_student = Student(roll_number=roll_number, first_name=first_name, last_name=last_name)
+        db.session.add(new_student)
+        db.session.commit()
+        return ({
+            "student_id": new_student.student_id,
+            "first_name": new_student.first_name,
+            "last_name": new_student.last_name,
+            "roll_number": new_student.roll_number
+        }), 201
             
     def delete(self, student_id):
         student = Student.query.filter(Student.student_id == student_id).first()
         if not student:
             abort(404, "Student not found")
-        else:
-            Enrollments.query.filter(Enrollments.student_id == student_id).delete()
-            db.session.delete(student)
-            db.session.commit()
-        return {"message":"Successfully Deleted"}
+
+        db.session.delete(student)
+        db.session.commit()
+        return {"message":"Successfully Deleted"}, 200
         
     def put(self, student_id):
         student = Student.query.filter(Student.student_id == student_id).first()
@@ -105,17 +105,17 @@ class Students(Resource):
             raise ResourceValidationError(400, "STUDENT002", "First Name is required")
         elif not student:
             abort(404, "Student not found")
-        else:
-            student.roll_number = roll_number
-            student.first_name = first_name
-            student.last_name = last_name
-            db.session.commit()
+
+        student.roll_number = roll_number
+        student.first_name = first_name
+        student.last_name = last_name
+        db.session.commit()
         return ({
-            "student_id": student.student_id,
+            "student_id": student_id,
             "first_name": student.first_name,
             "last_name": student.last_name,
             "roll_number": student.roll_number
-        })
+        }), 200
             
             
 class Courses(Resource):
@@ -142,28 +142,25 @@ class Courses(Resource):
             raise ResourceValidationError(400, "COURSE001", "Course Name is required")
         elif course_exists:
             abort(409, "course_code already exist")
-        else:
-            new_course = Course(course_code=course_code, course_name=course_name, course_description=course_description)
-            db.session.add(new_course)
-            db.session.commit()
-            return ({
-                "course_id": new_course.course_id,
-                "course_name": new_course.course_name,
-                "course_code": new_course.course_code,
-                "course_description": new_course.course_description
-            })
+
+        new_course = Course(course_code=course_code, course_name=course_name, course_description=course_description)
+        db.session.add(new_course)
+        db.session.commit()
+        return ({
+            "course_id": new_course.course_id,
+            "course_name": new_course.course_name,
+            "course_code": new_course.course_code,
+            "course_description": new_course.course_description
+        }), 201
     
     def delete(self, course_id):
         course = Course.query.filter(Course.course_id == course_id).first()
-        if course:
-            enrollments = Enrollments.query.filter(Enrollments.course_id == course_id).all()
-            for enrolled_course in enrollments:
-                db.session.delete(enrolled_course)
-            db.session.delete(course)
-            db.session.commit()
-            return {"message":"Successfully Deleted"}
-        else:
+        if not course:
             abort(404, "Course not found")
+            
+        db.session.delete(course)
+        db.session.commit()
+        return {"message":"Successfully Deleted"}, 200
     
     def put(self, course_id):
         course = Course.query.filter(Course.course_id == course_id).first()
@@ -183,12 +180,12 @@ class Courses(Resource):
             course.course_name = course_name
             course.course_description = course_description
             db.session.commit()
-            return ({
-                "course_id": course.course_id,
-                "course_name": course.course_name,
-                "course_code": course.course_code,
-                "course_description": course.description
-            })
+        return ({
+            "course_id": course_id,
+            "course_name": course.course_name,
+            "course_code": course.course_code,
+            "course_description": course.course_description
+        }), 200
 
     
 class EnrollmentList(Resource):
@@ -205,33 +202,34 @@ class EnrollmentList(Resource):
                                               "course_id": enrollment.course_id})
         else:
             raise ResourceValidationError(400, "ENROLLMENT002", "Student does not exist.")
-        return enrolled_courses_list
+        return enrolled_courses_list, 200
     
     def post(self, student_id):
         args = request.json
         course_id = args.get("course_id")
         student = Student.query.filter(Student.student_id == student_id).first()
         course = Course.query.filter(Course.course_id == course_id).first()
-        enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
-        new_enrollment_list = []
         
         if not student:
             abort(404, "Student not found")
         elif not course:
             raise ResourceValidationError(400, "ENROLLMENT001", "Course does not exist")
-        else:
-            new_enrollment = Enrollments(student_id=student_id, course_id=course_id)
-            db.session.add(new_enrollment)
-            db.session.commit()
-            response_data = [
-                {
-                    "enrollment_id": new_enrollment.enrollment_id,
-                    "student_id": new_enrollment.student_id,
-                    "course_id": new_enrollment.course_id
-                }
-            ]
 
-        return response_data
+        new_enrollment = Enrollments(student_id=student_id, course_id=course_id)
+        db.session.add(new_enrollment)
+        db.session.commit()
+        
+        enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
+        response_data = [
+            {
+                    "enrollment_id": enrollment.enrollment_id,
+                    "student_id": enrollment.student_id,
+                    "course_id": enrollment.course_id
+            }
+            for enrollment in enrollments
+        ]
+
+        return response_data, 201
     
     def delete(self, student_id, course_id):
         student = Student.query.filter(Student.student_id == student_id).first()
@@ -244,10 +242,10 @@ class EnrollmentList(Resource):
             raise ResourceValidationError(400, "ENROLLMENT001", "Course does not exist")
         if not enrollment:
             abort(404, "Enrollment for the student not found")
-        else:
-            db.session.delete(enrollment)
-            db.session.commit()
-        return {"message":"Successfully Deleted"}
+
+        db.session.delete(enrollment)
+        db.session.commit()
+        return {"message":"Successfully Deleted"}, 200
         
 
 # Api Routing
