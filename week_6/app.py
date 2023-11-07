@@ -157,9 +157,17 @@ class Courses(Resource):
         course = Course.query.filter(Course.course_id == course_id).first()
         if not course:
             abort(404, "Course not found")
-            
+
+        # Check if the course resource is referenced by any enrollment resources.
+        enrollments = Enrollments.query.filter(Enrollments.course_id == course_id).all()
+        if enrollments:
+            # Raise a reference error to the user.
+            raise ResourceValidationError(409, "COURSE003", "Course resource is referenced by other resources. Cannot delete.")
+
+        # Delete the course resource.
         db.session.delete(course)
         db.session.commit()
+
         return {"message":"Successfully Deleted"}, 200
     
     def put(self, course_id):
@@ -190,35 +198,49 @@ class Courses(Resource):
     
 class EnrollmentList(Resource):
     def get(self, student_id):
-        enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
         student = Student.query.filter(Student.student_id == student_id).first()
-        enrolled_courses_list = []
-        if student and len(enrollments) == 0:
-            abort(404, "Student is not enrolled in any course")
-        elif student and len(enrollments) != 0:
-            for enrollment in enrollments:
-                enrolled_courses_list.append({"enrollment_id": enrollment.enrollment_id, 
-                                              "student_id": enrollment.student_id, 
-                                              "course_id": enrollment.course_id})
-        else:
+        if not student:
             raise ResourceValidationError(400, "ENROLLMENT002", "Student does not exist.")
-        return enrolled_courses_list, 200
+
+        # Fetch the enrollment details of the student.
+        enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
+
+        response_data = [
+            {
+                    "enrollment_id": enrollment.enrollment_id,
+                    "student_id": enrollment.student_id,
+                    "course_id": enrollment.course_id
+            }
+            for enrollment in enrollments
+        ]
+
+        return response_data, 200
     
     def post(self, student_id):
         args = request.json
         course_id = args.get("course_id")
-        student = Student.query.filter(Student.student_id == student_id).first()
-        course = Course.query.filter(Course.course_id == course_id).first()
-        
-        if not student:
-            abort(404, "Student not found")
-        elif not course:
-            raise ResourceValidationError(400, "ENROLLMENT001", "Course does not exist")
 
+        # Check if the student resource exists.
+        student = Student.query.filter(Student.student_id == student_id).first()
+        if not student:
+            raise ResourceValidationError(400, "ENROLLMENT002", "Student does not exist.")
+
+        # Check if the course resource exists.
+        course = Course.query.filter(Course.course_id == course_id).first()
+        if not course:
+            raise ResourceValidationError(400, "ENROLLMENT001", "Course does not exist.")
+
+        # Check if the student resource is already enrolled in the course resource.
+        enrollment = Enrollments.query.filter(Enrollments.student_id == student_id, Enrollments.course_id == course_id).first()
+        if enrollment:
+            # Raise an error message to the user.
+            raise ResourceValidationError(409, "ENROLLMENT004", "Student is already enrolled in the course.")
+
+        # Create a new enrollment record.
         new_enrollment = Enrollments(student_id=student_id, course_id=course_id)
         db.session.add(new_enrollment)
         db.session.commit()
-        
+
         enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
         response_data = [
             {
@@ -238,7 +260,7 @@ class EnrollmentList(Resource):
         
         if not student:
             raise ResourceValidationError(400, "ENROLLMENT002", "Student does not exist")
-        elif not course:
+        if not course:
             raise ResourceValidationError(400, "ENROLLMENT001", "Course does not exist")
         if not enrollment:
             abort(404, "Enrollment for the student not found")
