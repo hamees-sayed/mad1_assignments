@@ -30,10 +30,10 @@ class Course(db.Model):
     course_code = db.Column(db.String,unique=True,nullable=False)
     course_name= db.Column(db.String,nullable=False)
     course_description= db.Column(db.String)
-    student=db.relationship("Student", secondary="enrollments")
+    student=db.relationship("Student", secondary="enrollment")
 
-class Enrollments(db.Model):
-    __tablename__ = "enrollments"
+class Enrollment(db.Model):
+    __tablename__ = "enrollment"
     enrollment_id=db.Column(db.Integer,primary_key=True,nullable=False)
     student_id = db.Column(db.Integer,db.ForeignKey("student.student_id"),nullable=False)
     course_id = db.Column(db.Integer,db.ForeignKey("course.course_id"),nullable=False)
@@ -158,11 +158,9 @@ class Courses(Resource):
         if not course:
             abort(404, "Course not found")
 
-        # Check if the course resource is referenced by any enrollment resources.
-        enrollments = Enrollments.query.filter(Enrollments.course_id == course_id).all()
-        if enrollments:
-            # Raise a reference error to the user.
-            raise ResourceValidationError(409, "COURSE003", "Course resource is referenced by other resources. Cannot delete.")
+        # enrollments = Enrollment.query.filter(Enrollment.course_id == course_id).all()
+        # if enrollments:
+        #     raise ResourceValidationError(409, "COURSE003", "Course resource is referenced by other resources. Cannot delete.")
 
         # Delete the course resource.
         db.session.delete(course)
@@ -203,7 +201,7 @@ class EnrollmentList(Resource):
             raise ResourceValidationError(400, "ENROLLMENT002", "Student does not exist.")
 
         # Fetch the enrollment details of the student.
-        enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
+        enrollments = Enrollment.query.filter(Enrollment.student_id == student_id).all()
 
         response_data = [
             {
@@ -231,17 +229,17 @@ class EnrollmentList(Resource):
             raise ResourceValidationError(400, "ENROLLMENT001", "Course does not exist.")
 
         # Check if the student resource is already enrolled in the course resource.
-        enrollment = Enrollments.query.filter(Enrollments.student_id == student_id, Enrollments.course_id == course_id).first()
+        enrollment = Enrollment.query.filter(Enrollment.student_id == student_id, Enrollment.course_id == course_id).first()
         if enrollment:
             # Raise an error message to the user.
             raise ResourceValidationError(409, "ENROLLMENT004", "Student is already enrolled in the course.")
 
         # Create a new enrollment record.
-        new_enrollment = Enrollments(student_id=student_id, course_id=course_id)
+        new_enrollment = Enrollment(student_id=student_id, course_id=course_id)
         db.session.add(new_enrollment)
         db.session.commit()
 
-        enrollments = Enrollments.query.filter(Enrollments.student_id == student_id).all()
+        enrollments = Enrollment.query.filter(Enrollment.student_id == student_id).all()
         response_data = [
             {
                     "enrollment_id": enrollment.enrollment_id,
@@ -256,7 +254,7 @@ class EnrollmentList(Resource):
     def delete(self, student_id, course_id):
         student = Student.query.filter(Student.student_id == student_id).first()
         course = Course.query.filter(Course.course_id == course_id).first()
-        enrollment = Enrollments.query.filter(Enrollments.student_id == student_id, Enrollments.course_id == course_id).first()
+        enrollment = Enrollment.query.filter(Enrollment.student_id == student_id, Enrollment.course_id == course_id).first()
         
         if not student:
             raise ResourceValidationError(400, "ENROLLMENT002", "Student does not exist")
